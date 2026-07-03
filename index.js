@@ -7,34 +7,36 @@ const path = require("path");
 
 dotenv.config();
 
+// Connect Database
 connectDB();
 
 const app = express();
 
-const allowedOrigins = [
-  "https://frontend-project-ibx91rbvo-megha2045m-labs-projects.vercel.app",
-  "https://frontend-project-1dr7yx651-megha2045m-labs-projects.vercel.app",
-];
-
+// ✅ TEMPORARY CORS (Allow all origins for testing)
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      }
-      return callback(new Error("Not allowed by CORS"));
-    },
+    origin: true,
     credentials: true,
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// Middleware
 app.use(express.json());
+
+// Static folder
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// Routes
 app.use("/api/files", fileRoutes);
 
+// Test Route
 app.get("/", (req, res) => {
   res.send("Drive Backend Running 🚀");
 });
 
+// Start Server
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

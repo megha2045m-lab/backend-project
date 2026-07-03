@@ -195,6 +195,12 @@ const previewFile = async (req, res) => {
         message: "File not found",
       });
     }
+    const filePath = path.join(__dirname, "../uploads", file.fileName);
+
+    console.log(filePath);
+    console.log(fs.existsSync(filePath));
+
+    res.sendFile(filePath);
 
     res.sendFile(
       path.join(__dirname, "../uploads", file.fileName)

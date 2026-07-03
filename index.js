@@ -11,11 +11,19 @@ connectDB();
 
 const app = express();
 
+const allowedOrigins = [
+  "https://frontend-project-ibx91rbvo-megha2045m-labs-projects.vercel.app",
+  "https://frontend-project-1dr7yx651-megha2045m-labs-projects.vercel.app",
+];
+
 app.use(
   cors({
-    origin:
-      "https://frontend-project-1dr7yx651-megha2045m-labs-projects.vercel.app",
-    methods: ["GET", "POST", "PATCH", "DELETE"],
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   })
 );

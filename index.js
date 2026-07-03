@@ -11,9 +11,14 @@ connectDB();
 
 const app = express();
 
-app.use(cors({
-  origin: "https://your-vercel-app.vercel.app"
-}));
+app.use(
+  cors({
+    origin:
+      "https://frontend-project-ibx91rbvo-megha2045m-labs-projects.vercel.app",
+    methods: ["GET", "POST", "PATCH", "DELETE"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/files", fileRoutes);

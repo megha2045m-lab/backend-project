@@ -197,14 +197,13 @@ const previewFile = async (req, res) => {
     }
     const filePath = path.join(__dirname, "../uploads", file.fileName);
 
-    console.log(filePath);
-    console.log(fs.existsSync(filePath));
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        message: "Physical file not found on disk",
+      });
+    }
 
     res.sendFile(filePath);
-
-    res.sendFile(
-      path.join(__dirname, "../uploads", file.fileName)
-  );
   } catch (error) {
     console.error(error);
 

@@ -6,9 +6,7 @@ const path = require("path");
 const uploadFile = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({
-        message: "No file uploaded",
-      });
+      return res.status(400).json({ message: "No file uploaded" });
     }
 
     const newFile = new File({
@@ -27,10 +25,7 @@ const uploadFile = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Server Error",
-    });
+    res.status(500).json({ message: "Server Error" });
   }
 };
 
@@ -38,66 +33,83 @@ const uploadFile = async (req, res) => {
 const getFiles = async (req, res) => {
   try {
     const files = await File.find().sort({ createdAt: -1 });
-
     res.json(files);
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Server Error",
-    });
+    res.status(500).json({ message: "Server Error" });
   }
 };
 
-// Download File
+// Download File — forces browser to download with Content-Disposition: attachment
 const downloadFile = async (req, res) => {
   try {
     const file = await File.findById(req.params.id);
 
     if (!file) {
-      return res.status(404).json({
-        message: "File not found",
-      });
+      return res.status(404).json({ message: "File not found" });
     }
 
-    res.download(
-      path.join(__dirname, "../uploads", file.fileName),
-      file.originalName
-    );
+    const filePath = path.join(__dirname, "../uploads", file.fileName);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: "Physical file not found on disk" });
+    }
+
+    // Force download — attachment disposition
+    res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(file.originalName)}"`);
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.download(filePath, file.originalName);
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Server Error",
-    });
+    res.status(500).json({ message: "Server Error" });
   }
 };
 
-// Delete File
+// Preview File — serves file inline for browser rendering (no download)
+const previewFile = async (req, res) => {
+  try {
+    const file = await File.findById(req.params.id);
+
+    if (!file) {
+      return res.status(404).json({ message: "File not found" });
+    }
+
+    const filePath = path.join(__dirname, "../uploads", file.fileName);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: "Physical file not found on disk" });
+    }
+
+    // Serve inline — browser renders it, does NOT trigger a download
+    res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(file.originalName)}"`);
+    res.setHeader("Content-Type", file.fileType);
+    res.setHeader("Cache-Control", "public, max-age=3600");
+
+    const stream = fs.createReadStream(filePath);
+    stream.pipe(res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// Delete File (soft delete → Trash)
 const deleteFile = async (req, res) => {
   try {
     const file = await File.findById(req.params.id);
 
     if (!file) {
-      return res.status(404).json({
-        message: "File not found",
-      });
+      return res.status(404).json({ message: "File not found" });
     }
 
     file.isDeleted = true;
     file.deletedAt = new Date();
-
     await file.save();
 
-    res.json({
-      message: "File moved to Trash",
-    });
+    res.json({ message: "File moved to Trash" });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Server Error",
-    });
+    res.status(500).json({ message: "Server Error" });
   }
 };
 
@@ -107,37 +119,27 @@ const restoreFile = async (req, res) => {
     const file = await File.findById(req.params.id);
 
     if (!file) {
-      return res.status(404).json({
-        message: "File not found",
-      });
+      return res.status(404).json({ message: "File not found" });
     }
 
     file.isDeleted = false;
     file.deletedAt = null;
-
     await file.save();
 
-    res.json({
-      message: "File restored successfully",
-    });
+    res.json({ message: "File restored successfully" });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Server Error",
-    });
+    res.status(500).json({ message: "Server Error" });
   }
 };
 
-// Delete Forever
+// Delete Forever (hard delete)
 const deleteForever = async (req, res) => {
   try {
     const file = await File.findById(req.params.id);
 
     if (!file) {
-      return res.status(404).json({
-        message: "File not found",
-      });
+      return res.status(404).json({ message: "File not found" });
     }
 
     const filePath = path.join(__dirname, "../uploads", file.fileName);
@@ -148,68 +150,29 @@ const deleteForever = async (req, res) => {
 
     await File.findByIdAndDelete(req.params.id);
 
-    res.json({
-      message: "File permanently deleted",
-    });
+    res.json({ message: "File permanently deleted" });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Server Error",
-    });
+    res.status(500).json({ message: "Server Error" });
   }
 };
+
 // Toggle Star
 const toggleStar = async (req, res) => {
   try {
     const file = await File.findById(req.params.id);
 
     if (!file) {
-      return res.status(404).json({
-        message: "File not found",
-      });
+      return res.status(404).json({ message: "File not found" });
     }
 
     file.isStarred = !file.isStarred;
-
     await file.save();
 
-    res.json({
-      message: "Star updated",
-      file,
-    });
+    res.json({ message: "Star updated", file });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Server Error",
-    });
-  }
-};
-const previewFile = async (req, res) => {
-  try {
-    const file = await File.findById(req.params.id);
-
-    if (!file) {
-      return res.status(404).json({
-        message: "File not found",
-      });
-    }
-    const filePath = path.join(__dirname, "../uploads", file.fileName);
-
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
-        message: "Physical file not found on disk",
-      });
-    }
-
-    res.sendFile(filePath);
-  } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      message: "Server Error",
-    });
+    res.status(500).json({ message: "Server Error" });
   }
 };
 
